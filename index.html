@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Achtergrond Verwijderaar - Automatische Verwerking</title>
+    <title>Achtergrond Verwijderaar - Correcte Marges</title>
     <style>
         * {
             box-sizing: border-box;
@@ -381,6 +381,15 @@
             to { transform: translateX(0); opacity: 1; }
         }
         
+        .marges-info {
+            background-color: #fff9e6;
+            border: 1px solid #ffd700;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
         footer {
             text-align: center;
             margin-top: 30px;
@@ -415,8 +424,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Achtergrond Verwijderaar - Automatisch</h1>
-            <p class="subtitle">Upload een afbeelding of maak een screenshot → Automatisch verwerken → Direct downloaden</p>
+            <h1>Achtergrond Verwijderaar - Correcte Marges</h1>
+            <p class="subtitle">Upload of maak screenshot → Automatisch verwerken → Marges aan alle kanten → Direct downloaden</p>
         </header>
         
         <div class="main-content">
@@ -448,15 +457,6 @@
                         <div class="screenshot-icon">📸</div>
                         <p class="screenshot-text">Klik hier om een screenshot te maken van je scherm</p>
                         <p>Selecteer een scherm/venster → Direct verwerken → Automatisch downloaden</p>
-                        
-                        <div class="screenshot-instructions">
-                            <h4>Automatisch proces:</h4>
-                            <ol>
-                                <li>Klik op het scherm/venster dat je wilt vastleggen</li>
-                                <li>De screenshot wordt direct geladen en verwerkt</li>
-                                <li>Het resultaat wordt automatisch gedownload als PNG</li>
-                            </ol>
-                        </div>
                     </div>
                 </div>
                 
@@ -473,10 +473,18 @@
                     </div>
                     
                     <div class="control-group">
-                        <label for="margin">Marge rondom bijsnijden (in cm)</label>
+                        <label for="margin">Marge rondom (in cm)</label>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px; color: #666;">De marge wordt aan alle 4 kanten toegevoegd rond het object</p>
                         <div class="slider-container">
                             <input type="range" min="0.1" max="2" step="0.1" value="0.5" class="slider" id="margin">
                             <span class="slider-value" id="marginValue">0.5</span>
+                        </div>
+                        <div class="marges-info">
+                            <strong>Let op:</strong> De marge wordt aan <strong>alle kanten</strong> toegevoegd:<br>
+                            • Boven: + marge<br>
+                            • Onder: + marge<br>
+                            • Links: + marge<br>
+                            • Rechts: + marge
                         </div>
                     </div>
                     
@@ -484,8 +492,8 @@
                         <div class="info-title">Automatische Verwerking:</div>
                         <div class="info-text">
                             <p>• Na uploaden of screenshot start de verwerking automatisch</p>
+                            <p>• Wit wordt verwijderd en marges worden aan alle kanten toegevoegd</p>
                             <p>• Het resultaat wordt direct gedownload als PNG bestand</p>
-                            <p>• Je kunt de instellingen aanpassen voor toekomstige verwerkingen</p>
                         </div>
                     </div>
                 </div>
@@ -506,10 +514,10 @@
                     </div>
                     
                     <div>
-                        <h3 style="margin-bottom: 10px; color: #182848;">Resultaat (transparant + bijgesneden)</h3>
+                        <h3 style="margin-bottom: 10px; color: #182848;">Resultaat (transparant + gemarged)</h3>
                         <div class="image-container">
                             <div class="image-placeholder" id="resultPlaceholder">
-                                <p>Resultaat verschijnt hier na verwerking</p>
+                                <p>Resultaat met transparante achtergrond en marges verschijnt hier</p>
                             </div>
                             <canvas id="resultCanvas"></canvas>
                             <div class="loading hidden" id="loadingIndicator">
@@ -519,22 +527,22 @@
                     </div>
                     
                     <button id="manualDownloadBtn" class="button download-btn hidden">Handmatig Downloaden</button>
-                </div>
-                
-                <div class="info-box">
-                    <div class="info-title">Tips voor beste resultaten:</div>
-                    <div class="info-text">
-                        <p>• Gebruik afbeeldingen met een effen witte achtergrond voor beste resultaten</p>
-                        <p>• Pas de gevoeligheid aan als te veel of te weinig wordt verwijderd</p>
-                        <p>• De afbeelding wordt automatisch bijgesneden met de opgegeven marge</p>
-                        <p>• Het resultaat wordt automatisch gedownload na verwerking</p>
+                    
+                    <div class="info-box">
+                        <div class="info-title">Marges Informatie:</div>
+                        <div class="info-text">
+                            <p><strong>Origineel formaat:</strong> <span id="originalSize">-</span></p>
+                            <p><strong>Resultaat formaat:</strong> <span id="resultSize">-</span></p>
+                            <p><strong>Toegevoegde marges:</strong> <span id="marginInfo">-</span> aan elke kant</p>
+                            <p><strong>Totaal toegevoegd:</strong> <span id="totalMargin">-</span> (2× marge per as)</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
         <footer>
-            <p>Achtergrond Verwijderaar - Automatische Verwerking &copy; 2023 | Werkt volledig in je browser</p>
+            <p>Achtergrond Verwijderaar - Correcte Marges &copy; 2023 | Werkt volledig in je browser</p>
         </footer>
     </div>
 
@@ -559,6 +567,10 @@
         const resultPlaceholder = document.getElementById('resultPlaceholder');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const manualDownloadBtn = document.getElementById('manualDownloadBtn');
+        const originalSize = document.getElementById('originalSize');
+        const resultSize = document.getElementById('resultSize');
+        const marginInfo = document.getElementById('marginInfo');
+        const totalMargin = document.getElementById('totalMargin');
         
         // Variabelen
         let originalImage = null;
@@ -615,6 +627,7 @@
         manualDownloadBtn.addEventListener('click', () => {
             if (processedImage) {
                 downloadImage(processedImage);
+                showStatusMessage("Afbeelding gedownload!");
             }
         });
         
@@ -681,6 +694,9 @@
                 resultPlaceholder.classList.remove('hidden');
                 resultCanvas.classList.add('hidden');
                 manualDownloadBtn.classList.add('hidden');
+                
+                // Update formaat info
+                originalSize.textContent = `${originalImage.width} × ${originalImage.height} pixels`;
             };
             originalImage.src = dataUrl;
         }
@@ -770,7 +786,7 @@
             
             // Toon laadindicator
             loadingIndicator.classList.remove('hidden');
-            showStatusMessage("Bezig met verwerken...");
+            showStatusMessage("Bezig met verwerken en marges toevoegen...");
             
             // Geef de browser even tijd om de UI te updaten
             setTimeout(() => {
@@ -779,17 +795,21 @@
                     const marginCm = parseFloat(marginSlider.value);
                     const marginPx = Math.round(marginCm * dpi / 2.54);
                     
+                    // Update marge informatie
+                    marginInfo.textContent = `${marginPx}px (${marginCm}cm)`;
+                    totalMargin.textContent = `${marginPx * 2}px (${marginCm * 2}cm)`;
+                    
                     // Maak een tijdelijk canvas voor de volledige grootte verwerking
                     const tempCanvas = document.createElement('canvas');
                     const tempCtx = tempCanvas.getContext('2d');
                     
-                    // Gebruik de originele afbeelding afmetingen (niet de weergave afmetingen)
+                    // Gebruik de originele afbeelding afmetingen
                     tempCanvas.width = originalImage.width;
                     tempCanvas.height = originalImage.height;
                     tempCtx.drawImage(originalImage, 0, 0);
                     
                     // Verwijder de achtergrond en krijg de bijgesneden bounds
-                    const result = removeBackgroundAndCrop(tempCanvas, tempCtx, parseInt(thresholdSlider.value), marginPx);
+                    const result = removeBackgroundAndAddMarges(tempCanvas, tempCtx, parseInt(thresholdSlider.value), marginPx);
                     
                     // Toon het resultaat
                     resultPlaceholder.classList.add('hidden');
@@ -803,6 +823,9 @@
                     resultCtx.clearRect(0, 0, resultCanvas.width, resultCanvas.height);
                     resultCtx.drawImage(result.canvas, 0, 0);
                     
+                    // Update resultaat formaat info
+                    resultSize.textContent = `${result.width} × ${result.height} pixels`;
+                    
                     // Sla de verwerkte afbeelding op voor download
                     processedImage = resultCanvas.toDataURL('image/png');
                     
@@ -812,7 +835,7 @@
                     // Download automatisch
                     setTimeout(() => {
                         downloadImage(processedImage);
-                        showStatusMessage("Afbeelding gedownload!");
+                        showStatusMessage("Afbeelding met marges gedownload!");
                         
                         // Verberg statusbericht na 3 seconden
                         setTimeout(() => hideStatusMessage(), 3000);
@@ -831,7 +854,7 @@
             }, 50);
         }
         
-        function removeBackgroundAndCrop(canvas, ctx, threshold, margin) {
+        function removeBackgroundAndAddMarges(canvas, ctx, threshold, margin) {
             const width = canvas.width;
             const height = canvas.height;
             
@@ -872,54 +895,82 @@
                 bottom = height - 1;
             }
             
-            // Voeg marge toe
-            left = Math.max(0, left - margin);
-            right = Math.min(width - 1, right + margin);
-            top = Math.max(0, top - margin);
-            bottom = Math.min(height - 1, bottom + margin);
+            // Bereken de nieuwe breedte en hoogte MET marges aan alle kanten
+            const cropWidth = (right - left + 1) + (margin * 2); // Marges links en rechts
+            const cropHeight = (bottom - top + 1) + (margin * 2); // Marges boven en onder
             
-            // Bereken de nieuwe breedte en hoogte
-            const cropWidth = right - left + 1;
-            const cropHeight = bottom - top + 1;
+            // Bereken waar het origineel moet komen in het nieuwe canvas
+            const offsetX = margin; // Links marge
+            const offsetY = margin; // Boven marge
             
-            // Maak een nieuw canvas voor het bijgesneden resultaat
-            const croppedCanvas = document.createElement('canvas');
-            croppedCanvas.width = cropWidth;
-            croppedCanvas.height = cropHeight;
-            const croppedCtx = croppedCanvas.getContext('2d');
+            // Maak een nieuw canvas voor het resultaat met marges
+            const resultCanvas = document.createElement('canvas');
+            resultCanvas.width = cropWidth;
+            resultCanvas.height = cropHeight;
+            const resultCtx = resultCanvas.getContext('2d');
             
-            // Kopieer het bijgesneden gebied naar het nieuwe canvas
-            croppedCtx.drawImage(canvas, left, top, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+            // Maak de achtergrond volledig transparant
+            resultCtx.clearRect(0, 0, cropWidth, cropHeight);
             
-            // Verwijder nu de achtergrond van het bijgesneden gebied
-            const croppedImageData = croppedCtx.getImageData(0, 0, cropWidth, cropHeight);
-            const croppedData = croppedImageData.data;
+            // Kopieer het bijgesneden gebied naar het nieuwe canvas, gecentreerd met marges
+            resultCtx.drawImage(
+                canvas, 
+                left, top, (right - left + 1), (bottom - top + 1), // Bron: bijgesneden gebied
+                offsetX, offsetY, (right - left + 1), (bottom - top + 1) // Bestemming: met marges
+            );
             
-            for (let i = 0; i < croppedData.length; i += 4) {
-                const r = croppedData[i];
-                const g = croppedData[i + 1];
-                const b = croppedData[i + 2];
-                
-                // Als de pixel wit is (boven de drempel), maak hem transparant
-                if (r >= threshold && g >= threshold && b >= threshold) {
-                    croppedData[i + 3] = 0; // Alpha op 0 voor transparantie
+            // Verwijder nu de achtergrond van het gekopieerde gebied
+            const resultImageData = resultCtx.getImageData(0, 0, cropWidth, cropHeight);
+            const resultData = resultImageData.data;
+            
+            for (let y = 0; y < cropHeight; y++) {
+                for (let x = 0; x < cropWidth; x++) {
+                    const index = (y * cropWidth + x) * 4;
+                    
+                    // Bepaal of we in het originele beeld gebied zijn
+                    const inOriginalArea = 
+                        x >= offsetX && 
+                        x < offsetX + (right - left + 1) && 
+                        y >= offsetY && 
+                        y < offsetY + (bottom - top + 1);
+                    
+                    if (inOriginalArea) {
+                        // In het originele gebied: verwijder wit
+                        const r = resultData[index];
+                        const g = resultData[index + 1];
+                        const b = resultData[index + 2];
+                        
+                        // Als de pixel wit is (boven de drempel), maak hem transparant
+                        if (r >= threshold && g >= threshold && b >= threshold) {
+                            resultData[index + 3] = 0; // Alpha op 0 voor transparantie
+                        }
+                    } else {
+                        // In de marge gebieden: altijd transparant
+                        resultData[index + 3] = 0; // Alpha op 0 voor transparantie
+                    }
                 }
             }
             
             // Plaats de verwerkte image data terug op het canvas
-            croppedCtx.putImageData(croppedImageData, 0, 0);
+            resultCtx.putImageData(resultImageData, 0, 0);
             
             return {
-                canvas: croppedCanvas,
+                canvas: resultCanvas,
                 width: cropWidth,
                 height: cropHeight,
-                bounds: { left, top, right, bottom }
+                bounds: { left, top, right, bottom },
+                margins: {
+                    top: margin,
+                    bottom: margin,
+                    left: margin,
+                    right: margin
+                }
             };
         }
         
         function downloadImage(dataUrl) {
             const link = document.createElement('a');
-            link.download = 'achtergrond-verwijderd-' + new Date().getTime() + '.png';
+            link.download = `achtergrond-verwijderd-marge-${marginSlider.value}cm-${new Date().getTime()}.png`;
             link.href = dataUrl;
             document.body.appendChild(link);
             link.click();
