@@ -1,1 +1,366 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Achtergrond Toevoegen aan Afbeelding</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Achtergrond Toevoegen aan Afbeelding</h1>
+            <p class="subtitle">Upload een afbeelding zonder achtergrond en een achtergrondafbeelding - wordt direct gecombineerd en gedownload</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="automatic-notice">
+                ⚡ De afbeelding wordt automatisch gecombineerd en gedownload zodra beide zijn geüpload!
+            </div>
+            
+            <div class="upload-section">
+                <div class="upload-box" id="foregroundBox">
+                    <h3>Voorgrondafbeelding</h3>
+                    <p>Upload een afbeelding zonder achtergrond (PNG met transparantie werkt het beste)</p>
+                    <div class="image-preview" id="foregroundPreview">
+                        <span>Nog niet geüpload</span>
+                    </div>
+                    <button class="upload-btn" id="foregroundBtn">Kies Voorgrond</button>
+                    <input type="file" id="foregroundInput" class="file-input" accept="image/png, image/jpeg">
+                    <div class="upload-status" id="foregroundStatus"></div>
+                </div>
+                
+                <div class="upload-box" id="backgroundBox">
+                    <h3>Achtergrondafbeelding</h3>
+                    <p>Upload de achtergrond die je wilt toevoegen</p>
+                    <div class="image-preview" id="backgroundPreview">
+                        <span>Nog niet geüpload</span>
+                    </div>
+                    <button class="upload-btn" id="backgroundBtn">Kies Achtergrond</button>
+                    <input type="file" id="backgroundInput" class="file-input" accept="image/png, image/jpeg, image/jpg">
+                    <div class="upload-status" id="backgroundStatus"></div>
+                </div>
+            </div>
+            
+            <div class="loader" id="combineLoader"></div>
+            
+            <div class="result-section">
+                <h2 class="section-title">Voorbeeld van het resultaat</h2>
+                <div class="result-container">
+                    <canvas id="resultCanvas"></canvas>
+                </div>
+                
+                <div class="download-info" id="downloadInfo">
+                    <h4>✅ Download voltooid!</h4>
+                    <p>Je gecombineerde afbeelding is gedownload. Als dit niet automatisch gebeurde, klik dan op de knop hieronder.</p>
+                    <div class="manual-download">
+                        <button class="button download-btn" id="manualDownloadBtn">Opnieuw Downloaden</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-title">Hoe werkt het?</div>
+                <div class="info-text">
+                    <ol style="padding-left: 20px;">
+                        <li><strong>Upload een voorgrondafbeelding</strong> zonder achtergrond (PNG met transparantie werkt het beste).</li>
+                        <li><strong>Upload een achtergrondafbeelding</strong> waar je achter de voorgrondafbeelding wilt plaatsen.</li>
+                        <li><strong>Automatische combinatie:</strong> Zodra beide afbeeldingen zijn geüpload, worden ze direct gecombineerd.</li>
+                        <li><strong>Automatische download:</strong> Het resultaat wordt automatisch gedownload naar je computer als "achtergrond-toegevoegd.png".</li>
+                    </ol>
+                    <p style="margin-top: 15px;"><strong>Tip:</strong> Voor het beste resultaat, gebruik een PNG-afbeelding met transparante achtergrond als voorgrond.</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p><a href="index.html" style="color: #4b6cb7; text-decoration: none;">← Terug naar startpagina</a> | Achtergrond Toevoegen &copy; 2023 | Werkt volledig in je browser</p>
+        </footer>
+    </div>
 
+    <script>
+        // DOM elementen
+        const foregroundInput = document.getElementById('foregroundInput');
+        const backgroundInput = document.getElementById('backgroundInput');
+        const foregroundBtn = document.getElementById('foregroundBtn');
+        const backgroundBtn = document.getElementById('backgroundBtn');
+        const foregroundPreview = document.getElementById('foregroundPreview');
+        const backgroundPreview = document.getElementById('backgroundPreview');
+        const foregroundStatus = document.getElementById('foregroundStatus');
+        const backgroundStatus = document.getElementById('backgroundStatus');
+        const foregroundBox = document.getElementById('foregroundBox');
+        const backgroundBox = document.getElementById('backgroundBox');
+        const resultCanvas = document.getElementById('resultCanvas');
+        const combineLoader = document.getElementById('combineLoader');
+        const downloadInfo = document.getElementById('downloadInfo');
+        const manualDownloadBtn = document.getElementById('manualDownloadBtn');
+        const ctx = resultCanvas.getContext('2d');
+        
+        // Variabelen om afbeeldingen op te slaan
+        let foregroundImage = null;
+        let backgroundImage = null;
+        let combineInProgress = false;
+        let lastDownloadUrl = null;
+        
+        // Stel canvasgrootte in
+        function setupCanvas() {
+            resultCanvas.width = 600;
+            resultCanvas.height = 400;
+            
+            // Teken een standaard achtergrondpatroon
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(0, 0, resultCanvas.width, resultCanvas.height);
+            
+            // Teken een rasterpatroon
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            
+            // Verticale lijnen
+            for (let x = 0; x <= resultCanvas.width; x += 20) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, resultCanvas.height);
+                ctx.stroke();
+            }
+            
+            // Horizontale lijnen
+            for (let y = 0; y <= resultCanvas.height; y += 20) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(resultCanvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Voeg tekst toe
+            ctx.fillStyle = '#999';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Upload beide afbeeldingen om te beginnen', resultCanvas.width/2, resultCanvas.height/2);
+        }
+        
+        // Initialiseer canvas
+        setupCanvas();
+        
+        // Event listeners voor knoppen
+        foregroundBtn.addEventListener('click', () => {
+            foregroundInput.click();
+        });
+        
+        backgroundBtn.addEventListener('click', () => {
+            backgroundInput.click();
+        });
+        
+        // Event listener voor voorgrondafbeelding
+        foregroundInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Toon uploadstatus
+            foregroundStatus.textContent = "Bezig met uploaden...";
+            foregroundStatus.className = "upload-status status-waiting";
+            foregroundBox.classList.add('active');
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                foregroundImage = new Image();
+                foregroundImage.onload = function() {
+                    // Toon voorbeeld
+                    foregroundPreview.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    foregroundPreview.appendChild(img);
+                    
+                    // Update status
+                    foregroundStatus.textContent = "✅ Klaar!";
+                    foregroundStatus.className = "upload-status status-success";
+                    
+                    // Controleer of beide afbeeldingen geladen zijn
+                    checkAndCombineImages();
+                };
+                foregroundImage.onerror = function() {
+                    foregroundStatus.textContent = "❌ Fout bij laden afbeelding";
+                    foregroundStatus.className = "upload-status";
+                    foregroundImage = null;
+                };
+                foregroundImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Event listener voor achtergrondafbeelding
+        backgroundInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Toon uploadstatus
+            backgroundStatus.textContent = "Bezig met uploaden...";
+            backgroundStatus.className = "upload-status status-waiting";
+            backgroundBox.classList.add('active');
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                backgroundImage = new Image();
+                backgroundImage.onload = function() {
+                    // Toon voorbeeld
+                    backgroundPreview.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    backgroundPreview.appendChild(img);
+                    
+                    // Update status
+                    backgroundStatus.textContent = "✅ Klaar!";
+                    backgroundStatus.className = "upload-status status-success";
+                    
+                    // Controleer of beide afbeeldingen geladen zijn
+                    checkAndCombineImages();
+                };
+                backgroundImage.onerror = function() {
+                    backgroundStatus.textContent = "❌ Fout bij laden afbeelding";
+                    backgroundStatus.className = "upload-status";
+                    backgroundImage = null;
+                };
+                backgroundImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Controleer of beide afbeeldingen geladen zijn en combineer ze
+        function checkAndCombineImages() {
+            if (foregroundImage && backgroundImage && !combineInProgress) {
+                combineInProgress = true;
+                combineLoader.classList.add('show');
+                
+                // Korte vertraging om gebruiker te laten zien wat er gebeurt
+                setTimeout(() => {
+                    combineImages();
+                    combineInProgress = false;
+                    combineLoader.classList.remove('show');
+                }, 800);
+            }
+        }
+        
+        // Combineer de afbeeldingen
+        function combineImages() {
+            if (!foregroundImage || !backgroundImage) return;
+            
+            // Pas canvasgrootte aan aan de achtergrondafbeelding
+            resultCanvas.width = backgroundImage.width;
+            resultCanvas.height = backgroundImage.height;
+            
+            // Teken de achtergrond
+            ctx.drawImage(backgroundImage, 0, 0, resultCanvas.width, resultCanvas.height);
+            
+            // Bereken de schaal voor de voorgrondafbeelding
+            // We willen dat de voorgrondafbeelding goed past in het canvas
+            const scale = Math.min(
+                resultCanvas.width / foregroundImage.width * 0.8,
+                resultCanvas.height / foregroundImage.height * 0.8
+            );
+            
+            const newWidth = foregroundImage.width * scale;
+            const newHeight = foregroundImage.height * scale;
+            
+            // Centreer de voorgrondafbeelding
+            const x = (resultCanvas.width - newWidth) / 2;
+            const y = (resultCanvas.height - newHeight) / 2;
+            
+            // Teken de voorgrondafbeelding
+            ctx.drawImage(foregroundImage, x, y, newWidth, newHeight);
+            
+            // Download de afbeelding automatisch
+            downloadImage();
+        }
+        
+        // Download de gecombineerde afbeelding
+        function downloadImage() {
+            // Maak een tijdelijk linkelement
+            const link = document.createElement('a');
+            link.download = 'achtergrond-toegevoegd.png';
+            
+            // Converteer canvas naar data URL
+            const dataUrl = resultCanvas.toDataURL('image/png');
+            link.href = dataUrl;
+            
+            // Sla de URL op voor eventueel hergebruik
+            lastDownloadUrl = dataUrl;
+            
+            // Simuleer een klik op de link om download te starten
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Toon downloadbevestiging
+            showDownloadConfirmation();
+        }
+        
+        // Toon downloadbevestiging
+        function showDownloadConfirmation() {
+            downloadInfo.classList.add('show');
+            
+            // Verberg na 8 seconden
+            setTimeout(() => {
+                downloadInfo.classList.remove('show');
+            }, 8000);
+        }
+        
+        // Event listener voor handmatige downloadknop
+        manualDownloadBtn.addEventListener('click', () => {
+            if (lastDownloadUrl) {
+                const link = document.createElement('a');
+                link.download = 'achtergrond-toegevoegd-herdownload.png';
+                link.href = lastDownloadUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else if (foregroundImage && backgroundImage) {
+                combineImages();
+            }
+        });
+        
+        // Voeg een voorbeeldafbeeldingen toe voor demonstratie
+        window.addEventListener('load', function() {
+            // Voorbeeldafbeeldingen
+            const exampleForeground = new Image();
+            exampleForeground.onload = function() {
+                // Toon voorbeeld in de preview
+                foregroundPreview.innerHTML = '';
+                const img = document.createElement('img');
+                img.src = exampleForeground.src;
+                foregroundPreview.appendChild(img);
+                foregroundImage = exampleForeground;
+                
+                // Update status
+                foregroundStatus.textContent = "✅ Voorbeeld geladen";
+                foregroundStatus.className = "upload-status status-success";
+                foregroundBox.classList.add('active');
+                
+                // Controleer of beide afbeeldingen geladen zijn
+                checkAndCombineImages();
+            };
+            // Een eenvoudige ster als voorbeeldvoorgrond
+            exampleForeground.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJ1cmwoI2dyYWRpZW50MCkiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQwIiB4MT0iMTAwIiB5MT0iMCIgeDI9IjEwMCIgeTI9IjIwMCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZmZmZmYiIHN0b3Atb3BhY2l0eT0iMCIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmZmZmYiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8cGF0aCBkPSJNMTUwIDc1TDEwMCAxMEw1MCA3NUw1IDg1TDU1IDE0MEw1MCAyMTBMMTAwIDE3NUwxNTAgMjEwTDE0NSAxNDBMMTk1IDg1TDE1MCA3NVoiIGZpbGw9IiMxODI4NDgiLz4KPC9zdmc+Cg==";
+            
+            // Voorbeeldachtergrond
+            const exampleBackground = new Image();
+            exampleBackground.onload = function() {
+                // Toon voorbeeld in de preview
+                backgroundPreview.innerHTML = '';
+                const img = document.createElement('img');
+                img.src = exampleBackground.src;
+                backgroundPreview.appendChild(img);
+                backgroundImage = exampleBackground;
+                
+                // Update status
+                backgroundStatus.textContent = "✅ Voorbeeld geladen";
+                backgroundStatus.className = "upload-status status-success";
+                backgroundBox.classList.add('active');
+                
+                // Controleer of beide afbeeldingen geladen zijn
+                checkAndCombineImages();
+            };
+            // Een eenvoudige gradient achtergrond als voorbeeld
+            exampleBackground.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiBmaWxsPSJ1cmwoI2dyYWRpZW50KSIvPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAiIHkxPSIwIiB4Mj0iNjAwIiB5Mj0iNDAwIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzI1NzVmYyIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2YTExY2IiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K";
+        });
+    </script>
+</body>
+</html>
