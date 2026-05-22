@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Afbeelding Compressor - Verklein Bestandsgrootte</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Extra stijlen specifiek voor deze tool */
+        .compress-settings {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .target-size-input {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .target-size-input label {
+            font-weight: 600;
+            color: #182848;
+            font-size: 1rem;
+        }
+        
+        .target-size-input input {
+            width: 120px;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .target-size-input input:focus {
+            outline: none;
+            border-color: #4b6cb7;
+        }
+        
+        .target-size-input .unit {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .compress-stats {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            color: white;
+        }
+        
+        .compress-stats h4 {
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            font-weight: 500;
+            opacity: 0.9;
+        }
+        
+        .stat-value {
+            font-weight: 700;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        
+        .quality-preview {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .info-note {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #1565c0;
+        }
+        
+        .info-note strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .auto-status {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #2e7d32;
+        }
+
+        .auto-status .status-icon {
+            font-size: 1.1rem;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Afbeelding Compressor</h1>
+            <p class="subtitle">Verklein je afbeelding naar elke gewenste bestandsgrootte - Automatisch comprimeren en downloaden</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <h2 class="section-title">1. Upload Afbeelding</h2>
+                
+                <div class="auto-status">
+                    <span class="status-icon">⚡</span>
+                    <strong>Automatische modus:</strong> Na upload wordt de afbeelding automatisch gecomprimeerd naar de gekozen grootte en gedownload!
+                </div>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-text">Sleep je afbeelding hierheen of klik om te uploaden</p>
+                    <p>Ondersteunt JPG, PNG, WebP en meer</p>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                </div>
+                
+                <div class="compress-settings">
+                    <h2 class="section-title">2. Compressie Instellingen</h2>
+                    
+                    <div class="target-size-input">
+                        <label>Gewenste bestandsgrootte:</label>
+                        <input type="number" id="targetMB" step="0.1" min="0.01" max="50" value="1.0">
+                        <span class="unit">MB</span>
+                        <span style="font-size: 0.85rem; color: #666;">(0.01 - 50 MB)</span>
+                    </div>
+                    
+                    <div class="info-box" style="margin-top: 15px;">
+                        <div class="info-title">Hoe het werkt:</div>
+                        <div class="info-text">
+                            <p>• Upload een afbeelding en kies de gewenste bestandsgrootte in MB</p>
+                            <p>• De tool past automatisch de kwaliteit aan om die grootte te bereiken</p>
+                            <p>• Na upload wordt direct gecomprimeerd en automatisch gedownload</p>
+                            <p>• De achtergrondkleur blijft volledig behouden</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="preview-section">
+                <h2 class="section-title">3. Voorbeeld & Resultaat</h2>
+                
+                <div class="preview-container">
+                    <div>
+                        <h3 style="margin-bottom: 10px; color: #182848;">Originele Afbeelding</h3>
+                        <div class="image-container">
+                            <div class="image-placeholder" id="originalPlaceholder">
+                                <p>Geüploade afbeelding verschijnt hier</p>
+                            </div>
+                            <img id="originalImg" style="max-width: 100%; max-height: 400px; display: none; border-radius: 8px; background: transparent;" alt="Origineel">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 style="margin-bottom: 10px; color: #182848;">Gecomprimeerde Afbeelding</h3>
+                        <div class="image-container">
+                            <div class="image-placeholder" id="resultPlaceholder">
+                                <p>Resultaat verschijnt hier na compressie</p>
+                            </div>
+                            <img id="resultImg" style="max-width: 100%; max-height: 400px; display: none; border-radius: 8px; background: transparent;" alt="Gecomprimeerd">
+                            <div class="loading hidden" id="loadingIndicator">
+                                <div class="spinner"></div>
+                                <p style="margin-top: 10px;">Bezig met comprimeren...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="compress-stats" id="statsPanel" style="display: none;">
+                    <h4>📊 Compressie Resultaten</h4>
+                    <div class="stat-row">
+                        <span class="stat-label">Originele grootte:</span>
+                        <span class="stat-value" id="originalFileSize">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Gecomprimeerde grootte:</span>
+                        <span class="stat-value" id="compressedFileSize">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Bespaard:</span>
+                        <span class="stat-value" id="savedSize">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Compressie ratio:</span>
+                        <span class="stat-value" id="compressionRatio">-</span>
+                    </div>
+                    <div class="quality-preview" id="qualityInfo">
+                        <span>📈 Gebruikte kwaliteit: -</span>
+                    </div>
+                </div>
+                
+                <div class="info-note">
+                    <strong>💡 Tip:</strong>
+                    De tool probeert zo dicht mogelijk bij de gewenste bestandsgrootte te komen. 
+                    PNG afbeeldingen worden omgezet naar JPG voor betere compressie, maar de achtergrondkleur blijft behouden.
+                    Voor zeer kleine bestandsgroottes kan kwaliteitsverlies zichtbaar zijn.
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p><a href="index.html" style="color: #4b6cb7; text-decoration: none;">← Terug naar startpagina</a> | Afbeelding Compressor &copy; 2023 | Werkt volledig in je browser</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM elementen
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const originalImg = document.getElementById('originalImg');
+        const resultImg = document.getElementById('resultImg');
+        const originalPlaceholder = document.getElementById('originalPlaceholder');
+        const resultPlaceholder = document.getElementById('resultPlaceholder');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const targetMBInput = document.getElementById('targetMB');
+        const statsPanel = document.getElementById('statsPanel');
+        
+        // Stats elementen
+        const originalFileSizeSpan = document.getElementById('originalFileSize');
+        const compressedFileSizeSpan = document.getElementById('compressedFileSize');
+        const savedSizeSpan = document.getElementById('savedSize');
+        const compressionRatioSpan = document.getElementById('compressionRatio');
+        const qualityInfoSpan = document.getElementById('qualityInfo');
+        
+        // Variabelen
+        let currentImageFile = null;
+        let currentOriginalDataUrl = null;
+        let currentCompressedBlob = null;
+        let autoCompressTimeout = null;
+        
+        // Event listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('highlight');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('highlight');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('highlight');
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleImageUpload(e.dataTransfer.files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleImageUpload(e.target.files[0]);
+            }
+        });
+        
+        // Luister naar veranderingen in doelgrootte (optioneel, voor realtime update)
+        targetMBInput.addEventListener('change', () => {
+            if (currentImageFile && currentOriginalDataUrl) {
+                // Verwijder eventuele eerdere timeout
+                if (autoCompressTimeout) clearTimeout(autoCompressTimeout);
+                // Start automatisch opnieuw comprimeren na 500ms
+                autoCompressTimeout = setTimeout(() => {
+                    compressToTargetSize();
+                }, 500);
+            }
+        });
+        
+        async function handleImageUpload(file) {
+            // Check bestandstype
+            if (!file.type.startsWith('image/')) {
+                showMessage("Alleen afbeeldingen zijn toegestaan!", true);
+                return;
+            }
+            
+            currentImageFile = file;
+            
+            // Toon originele afbeelding
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentOriginalDataUrl = e.target.result;
+                originalImg.src = currentOriginalDataUrl;
+                originalImg.style.display = 'block';
+                originalPlaceholder.style.display = 'none';
+                
+                // Toon originele bestandsgrootte
+                const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                originalFileSizeSpan.textContent = `${originalSizeMB} MB (${formatBytes(file.size)})`;
+                
+                // Reset resultaat
+                resultImg.style.display = 'none';
+                resultPlaceholder.style.display = 'flex';
+                statsPanel.style.display = 'none';
+                currentCompressedBlob = null;
+                
+                // Toon bericht
+                showMessage(`Afbeelding geladen: ${originalSizeMB} MB - Start automatische compressie...`);
+                
+                // Start automatisch comprimeren
+                compressToTargetSize();
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function compressToTargetSize() {
+            if (!currentImageFile || !currentOriginalDataUrl) return;
+            
+            // Verberg resultaat placeholder
+            resultPlaceholder.style.display = 'none';
+            loadingIndicator.classList.remove('hidden');
+            
+            // Haal doelgrootte op
+            let targetMB = parseFloat(targetMBInput.value);
+            if (isNaN(targetMB) || targetMB < 0.01) targetMB = 0.01;
+            if (targetMB > 50) targetMB = 50;
+            
+            const targetBytes = targetMB * 1024 * 1024;
+            const originalBytes = currentImageFile.size;
+            
+            // Als de afbeelding al kleiner is dan de doelgrootte
+            if (originalBytes <= targetBytes) {
+                showMessage("Afbeelding is al kleiner dan de gewenste grootte!", true);
+                loadingIndicator.classList.add('hidden');
+                resultPlaceholder.style.display = 'flex';
+                return;
+            }
+            
+            // Start compressie met binary search voor optimale kwaliteit
+            try {
+                const result = await findOptimalCompression(currentOriginalDataUrl, targetBytes);
+                
+                // Toon resultaat (behoud achtergrondkleur door geen extra canvas bewerkingen)
+                resultImg.src = result.dataUrl;
+                resultImg.style.display = 'block';
+                currentCompressedBlob = result.blob;
+                
+                // Update statistieken
+                const compressedSizeMB = (result.blob.size / (1024 * 1024)).toFixed(2);
+                compressedFileSizeSpan.textContent = `${compressedSizeMB} MB (${formatBytes(result.blob.size)})`;
+                
+                const savedMB = ((originalBytes - result.blob.size) / (1024 * 1024)).toFixed(2);
+                savedSizeSpan.textContent = `${savedMB} MB`;
+                
+                const compressionPercent = ((1 - result.blob.size / originalBytes) * 100).toFixed(1);
+                compressionRatioSpan.textContent = `${compressionPercent}% kleiner`;
+                
+                qualityInfoSpan.innerHTML = `📈 Gebruikte kwaliteit: ${Math.round(result.quality * 100)}% | Doel: ${targetMB} MB, bereikt: ${compressedSizeMB} MB`;
+                
+                statsPanel.style.display = 'block';
+                
+                // Automatisch downloaden
+                autoDownload(result.blob);
+                showMessage(`Compressie voltooid! ${compressedSizeMB} MB bereikt - Automatisch downloaden...`);
+                
+            } catch (error) {
+                console.error('Compressie fout:', error);
+                showMessage("Fout tijdens compressie. Probeer een andere afbeelding.", true);
+                resultPlaceholder.style.display = 'flex';
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+        
+        function autoDownload(blob) {
+            const link = document.createElement('a');
+            const extension = blob.type === 'image/jpeg' ? 'jpg' : 'png';
+            const originalName = currentImageFile.name || 'afbeelding';
+            const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '');
+            link.download = `${nameWithoutExt}-gecomprimeerd-${new Date().getTime()}.${extension}`;
+            link.href = URL.createObjectURL(blob);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+        
+        async function findOptimalCompression(dataUrl, targetBytes) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Gebruik canvas maar behoud exacte pixeldata (geen achtergrondwijzigingen)
+                    let minQuality = 0.01;
+                    let maxQuality = 0.95;
+                    let bestResult = null;
+                    
+                    // Functie om te comprimeren met bepaalde kwaliteit
+                    const compressAtQuality = (quality) => {
+                        return new Promise((res) => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            // Tekent exact de originele afbeelding zonder achtergrond aan te passen
+                            ctx.drawImage(img, 0, 0, img.width, img.height);
+                            
+                            // Gebruik JPEG voor compressie (behoudt alle pixelkleuren, inclusief achtergrond)
+                            canvas.toBlob((blob) => {
+                                res({ blob, quality });
+                            }, 'image/jpeg', quality);
+                        });
+                    };
+                    
+                    // Binary search voor optimale kwaliteit
+                    const search = async (low, high, iterations = 0) => {
+                        if (iterations > 15) {
+                            // Max iteraties bereikt, geef best resultaat
+                            if (bestResult) {
+                                resolve(bestResult);
+                            } else {
+                                const fallback = await compressAtQuality(0.3);
+                                resolve({ ...fallback, dataUrl: URL.createObjectURL(fallback.blob) });
+                            }
+                            return;
+                        }
+                        
+                        const mid = (low + high) / 2;
+                        const result = await compressAtQuality(mid);
+                        
+                        // Update best result
+                        if (!bestResult || Math.abs(result.blob.size - targetBytes) < Math.abs(bestResult.blob.size - targetBytes)) {
+                            bestResult = result;
+                        }
+                        
+                        // Beslis volgende stap
+                        if (Math.abs(result.blob.size - targetBytes) / targetBytes < 0.05) {
+                            // Binnen 5% van doel, goed genoeg
+                            const dataUrl = URL.createObjectURL(result.blob);
+                            resolve({ ...result, dataUrl });
+                            return;
+                        }
+                        
+                        if (result.blob.size > targetBytes) {
+                            await search(low, mid, iterations + 1);
+                        } else {
+                            await search(mid, high, iterations + 1);
+                        }
+                    };
+                    
+                    // Start binary search
+                    search(minQuality, maxQuality).then(finalResult => {
+                        // Zorg dat we een dataUrl hebben voor weergave
+                        if (!finalResult.dataUrl) {
+                            finalResult.dataUrl = URL.createObjectURL(finalResult.blob);
+                        }
+                        resolve(finalResult);
+                    }).catch(reject);
+                };
+                img.onerror = reject;
+                img.src = dataUrl;
+            });
+        }
+        
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function showMessage(message, isError = false) {
+            // Verwijder bestaande berichten
+            const existingMessages = document.querySelectorAll('.status-message');
+            existingMessages.forEach(msg => msg.remove());
+            
+            // Maak nieuw bericht
+            const statusMessage = document.createElement('div');
+            statusMessage.className = 'status-message';
+            statusMessage.textContent = message;
+            
+            if (isError) {
+                statusMessage.style.backgroundColor = '#e74c3c';
+            } else {
+                statusMessage.style.backgroundColor = '#27ae60';
+            }
+            
+            document.body.appendChild(statusMessage);
+            
+            // Verwijder na 3 seconden
+            setTimeout(() => {
+                if (statusMessage.parentNode) {
+                    statusMessage.remove();
+                }
+            }, 3000);
+        }
+        
+        // Voeg CSS voor status-message toe
+        if (!document.querySelector('#statusMessageStyle')) {
+            const style = document.createElement('style');
+            style.id = 'statusMessageStyle';
+            style.textContent = `
+                .status-message {
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: #27ae60;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 1000;
+                    animation: slideIn 0.3s ease-out;
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                }
+                
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    </script>
+</body>
+</html>
