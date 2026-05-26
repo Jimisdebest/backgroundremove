@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Editor</title>
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --toolbar-bg: #ffffff;
+            --toolbar-border: #dde1e6;
+            --text-color: #1a1a2e;
+            --button-hover: #e8ecf1;
+            --button-active: #d2d8e0;
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --accent-blue-active: #1e40af;
+            --document-bg: #ffffff;
+            --document-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --radius: 8px;
+            --radius-sm: 6px;
+            --transition: 0.15s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ========== TOOLBAR ========== */
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+            background: var(--toolbar-bg);
+            border-bottom: 1px solid var(--toolbar-border);
+            padding: 10px 16px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            user-select: none;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* Scheidingsteken */
+        .divider {
+            width: 1px;
+            height: 26px;
+            background: #dde1e6;
+            margin: 0 6px;
+            flex-shrink: 0;
+            border-radius: 1px;
+        }
+
+        /* Labels */
+        .toolbar-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #6b7280;
+            margin-right: 2px;
+            white-space: nowrap;
+        }
+
+        /* Selects & Inputs */
+        .toolbar select,
+        .toolbar input[type="color"] {
+            font-family: var(--font-sans);
+            font-size: 13px;
+            padding: 7px 10px;
+            border: 1.5px solid #dde1e6;
+            border-radius: var(--radius-sm);
+            background: #fafbfc;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: var(--transition);
+            outline: none;
+            min-width: 40px;
+        }
+
+        .toolbar select:hover,
+        .toolbar input[type="color"]:hover {
+            border-color: #bcc3cc;
+            background: #fff;
+        }
+        .toolbar select:focus,
+        .toolbar input[type="color"]:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
+        .toolbar input[type="color"] {
+            width: 38px;
+            height: 34px;
+            padding: 3px;
+            cursor: pointer;
+        }
+
+        /* Font-size number input */
+        .font-size-input {
+            width: 52px;
+            text-align: center;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            padding: 7px 4px;
+            border: 1.5px solid #dde1e6;
+            border-radius: var(--radius-sm);
+            background: #fafbfc;
+            color: #1a1a2e;
+            transition: var(--transition);
+            outline: none;
+        }
+        .font-size-input:hover {
+            border-color: #bcc3cc;
+            background: #fff;
+        }
+        .font-size-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
+        /* Opmaak knoppen (B, I, U) */
+        .format-btn {
+            width: 34px;
+            height: 34px;
+            border: 1.5px solid transparent;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            color: #4a4a5e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            position: relative;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            letter-spacing: 0.02em;
+        }
+        .format-btn:hover {
+            background: var(--button-hover);
+            border-color: #dde1e6;
+        }
+        .format-btn.active {
+            background: #e0e7ff;
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .format-btn.italic {
+            font-style: italic;
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }
+        .format-btn.underline {
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        /* Stijl dropdown */
+        .style-select {
+            font-weight: 600;
+            min-width: 110px;
+        }
+
+        /* Download knop */
+        .btn-download-pdf {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            background: var(--accent-blue);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+            font-family: var(--font-sans);
+            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
+        }
+        .btn-download-pdf:hover {
+            background: var(--accent-blue-hover);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
+        }
+        .btn-download-pdf:active {
+            background: var(--accent-blue-active);
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+        }
+        .btn-download-pdf svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        /* ========== DOCUMENT GEBIED ========== */
+        .document-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 32px 20px 60px;
+            overflow-y: auto;
+        }
+
+        .document {
+            width: 100%;
+            max-width: 800px;
+            min-height: 600px;
+            background: var(--document-bg);
+            border-radius: 4px;
+            box-shadow: var(--document-shadow);
+            padding: 60px 70px;
+            outline: none;
+            font-family: 'Calibri', 'Segoe UI', system-ui, sans-serif;
+            font-size: 16px;
+            line-height: 1.7;
+            color: #1a1a2e;
+            cursor: text;
+            transition: box-shadow 0.2s ease;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .document:focus {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 0 0 3px rgba(37, 99, 235, 0.06);
+        }
+
+        /* Placeholder */
+        .document:empty::before {
+            content: 'Begin hier met typen...';
+            color: #b0b8c4;
+            pointer-events: none;
+        }
+
+        /* Initiële inhoud stijlen */
+        .document h1,
+        .document .doc-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            color: #111827;
+        }
+        .document h2,
+        .document .doc-subtitle {
+            font-size: 20px;
+            font-weight: 400;
+            color: #5f6b7a;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .document h3,
+        .document .doc-heading1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            color: #111827;
+        }
+        .document h4,
+        .document .doc-heading2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 16px;
+            margin-bottom: 6px;
+            line-height: 1.4;
+            color: #1f2937;
+        }
+        .document p,
+        .document .doc-normal {
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 8px;
+            line-height: 1.7;
+            color: #1a1a2e;
+        }
+
+        /* ========== PRINT STYLES ========== */
+        @media print {
+            body {
+                background: #ffffff !important;
+                margin: 0;
+                padding: 0;
+            }
+            .toolbar {
+                display: none !important;
+            }
+            .document-wrapper {
+                padding: 0 !important;
+                display: block !important;
+                overflow: visible !important;
+            }
+            .document {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 20px 30px !important;
+                min-height: auto !important;
+                page-break-after: auto;
+                outline: none !important;
+            }
+            .document:focus {
+                box-shadow: none !important;
+            }
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .toolbar {
+                padding: 8px 10px;
+                gap: 4px;
+            }
+            .toolbar-left {
+                gap: 3px;
+            }
+            .divider {
+                margin: 0 2px;
+                height: 20px;
+            }
+            .toolbar select,
+            .toolbar input[type="color"] {
+                font-size: 12px;
+                padding: 5px 6px;
+            }
+            .format-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 12px;
+            }
+            .font-size-input {
+                width: 42px;
+                font-size: 12px;
+                padding: 5px 2px;
+            }
+            .btn-download-pdf {
+                padding: 7px 12px;
+                font-size: 12px;
+                gap: 5px;
+            }
+            .btn-download-pdf svg {
+                width: 14px;
+                height: 14px;
+            }
+            .document {
+                padding: 30px 24px;
+                max-width: 100%;
+                margin: 0 4px;
+            }
+            .document-wrapper {
+                padding: 16px 8px 40px;
+            }
+            .style-select {
+                min-width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== TOOLBAR ==================== -->
+    <div class="toolbar" id="toolbar">
+        <!-- Linker groep: opmaakopties -->
+        <div class="toolbar-left">
+            <!-- Lettertype -->
+            <span class="toolbar-label">Lettertype</span>
+            <select id="fontFamilySelect" title="Lettertype">
+                <option value="Calibri">Calibri</option>
+                <option value="Arial">Arial</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Trebuchet MS">Trebuchet MS</option>
+                <option value="Segoe UI">Segoe UI</option>
+                <option value="Garamond">Garamond</option>
+                <option value="Impact">Impact</option>
+            </select>
+
+            <!-- Lettergrootte -->
+            <span class="toolbar-label">Grootte</span>
+            <input type="number" id="fontSizeInput" class="font-size-input" value="16" min="6" max="120" step="1" title="Lettergrootte (px)">
+
+            <span class="divider"></span>
+
+            <!-- Vet -->
+            <button class="format-btn bold" id="btnBold" title="Vet (Ctrl+B)" aria-label="Vet">
+                <strong>B</strong>
+            </button>
+
+            <!-- Schuin -->
+            <button class="format-btn italic" id="btnItalic" title="Schuin (Ctrl+I)" aria-label="Schuin">
+                <em>I</em>
+            </button>
+
+            <!-- Onderstreept -->
+            <button class="format-btn underline" id="btnUnderline" title="Onderstreept (Ctrl+U)" aria-label="Onderstreept">
+                <span style="text-decoration:underline;text-underline-offset:3px;">U</span>
+            </button>
+
+            <span class="divider"></span>
+
+            <!-- Tekstkleur -->
+            <span class="toolbar-label">Kleur</span>
+            <input type="color" id="textColorPicker" value="#1a1a2e" title="Tekstkleur">
+
+            <span class="divider"></span>
+
+            <!-- Stijl dropdown -->
+            <span class="toolbar-label">Stijl</span>
+            <select id="styleSelect" class="style-select" title="Tekststijl">
+                <option value="normal">Normale tekst</option>
+                <option value="title">Titel</option>
+                <option value="subtitle">Ondertitel</option>
+                <option value="heading1">Kop 1</option>
+                <option value="heading2">Kop 2</option>
+            </select>
+        </div>
+
+        <!-- Rechter groep: Download knop -->
+        <div class="toolbar-right">
+            <button class="btn-download-pdf" id="btnDownloadPdf" title="Download als PDF">
+                <!-- PDF icoon -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="12" y1="18" x2="12" y2="12"/>
+                    <polyline points="9 15 12 18 15 15"/>
+                </svg>
+                Download PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== DOCUMENT ==================== -->
+    <div class="document-wrapper">
+        <div
+        class="document"
+        id="document"
+        contenteditable="true"
+        spellcheck="true"
+        aria-label="Document bewerken"
+        role="textbox"
+        aria-multiline="true"
+        >
+        <h1 class="doc-title">Mijn Document</h1>
+        <h2 class="doc-subtitle">Dit is een ondertitel — een korte beschrijving van het document</h2>
+        <p class="doc-normal">Welkom bij de <strong>document editor</strong>. Je kunt hierboven in de werkbalk het <em>lettertype</em>, de <span style="text-decoration:underline;">lettergrootte</span>, <strong>vet</strong>, <em>schuin</em>, <span style="text-decoration:underline;">onderstreept</span> en de <span style="color:#2563eb;">tekstkleur</span> aanpassen.</p>
+        <h3 class="doc-heading1">Kop 1 — Een sectie</h3>
+        <p class="doc-normal">Selecteer een stuk tekst en kies een stijl uit de dropdown: Titel, Ondertitel, Kop 1, Kop 2 of Normale tekst. Je kunt de stijl ook toepassen op een hele alinea door erin te klikken (zonder iets te selecteren) en dan een stijl te kiezen.</p>
+        <h4 class="doc-heading2">Kop 2 — Een subsectie</h4>
+        <p class="doc-normal">Dit document is volledig bewerkbaar. Typ, bewerk en stijl je tekst precies zoals je wilt. Klik op de <strong>blauwe knop "Download PDF"</strong> rechtsboven om het document direct als PDF-bestand te downloaden.</p>
+        <p class="doc-normal" style="margin-top:16px;">✨ <em>Tip: gebruik Ctrl+B voor vet, Ctrl+I voor schuin en Ctrl+U voor onderstreept.</em></p>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ========== DOM ELEMENTEN ==========
+        const documentEl = document.getElementById('document');
+        const fontFamilySelect = document.getElementById('fontFamilySelect');
+        const fontSizeInput = document.getElementById('fontSizeInput');
+        const btnBold = document.getElementById('btnBold');
+        const btnItalic = document.getElementById('btnItalic');
+        const btnUnderline = document.getElementById('btnUnderline');
+        const textColorPicker = document.getElementById('textColorPicker');
+        const styleSelect = document.getElementById('styleSelect');
+        const btnDownloadPdf = document.getElementById('btnDownloadPdf');
+
+        // ========== HULPFUNCTIES ==========
+        /** Behoudt de selectie/range en voert een callback uit */
+        function preserveSelection(callback) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) {
+                callback(null);
+                return;
+            }
+            const range = selection.getRangeAt(0).cloneRange();
+            callback(range);
+            // Herstel selectie
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        /** Vindt het dichtstbijzijnde blok-element (p, h1-h6, div) van een node */
+        function getBlockElement(node) {
+            while (node && node !== documentEl) {
+                const tag = node.nodeName ? node.nodeName.toLowerCase() : '';
+                if (['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'li', 'blockquote'].includes(tag)) {
+                    return node;
+                }
+                node = node.parentNode;
+            }
+            return null;
+        }
+
+        /** Past een CSS-stijl toe op de huidige selectie of het blok rond de cursor */
+        function applyBlockStyle(styleConfig) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+
+            // Als er tekst geselecteerd is die niet leeg is
+            if (!range.collapsed && range.toString().trim().length > 0) {
+                // Wrap de selectie in een nieuw blok-element
+                const extractedContents = range.extractContents();
+                const wrapper = document.createElement(styleConfig.tag || 'p');
+                // Pas stijlen toe
+                Object.assign(wrapper.style, styleConfig.style || {});
+                if (styleConfig.className) wrapper.className = styleConfig.className;
+                wrapper.appendChild(extractedContents);
+
+                // Zorg dat er een <br> in komt als het leeg lijkt
+                if (wrapper.innerHTML.trim() === '' || wrapper.innerHTML === '<br>') {
+                    wrapper.innerHTML = '<br>';
+                }
+
+                range.insertNode(wrapper);
+
+                // Selecteer de inhoud van de nieuwe wrapper
+                selection.removeAllRanges();
+                const newRange = document.createRange();
+                newRange.selectNodeContents(wrapper);
+                selection.addRange(newRange);
+            } else {
+                // Geen selectie: pas het huidige blok aan
+                let block = getBlockElement(range.startContainer);
+                if (!block || block === documentEl) {
+                    // Maak een nieuw blok als we in het document zelf zitten
+                    const newBlock = document.createElement(styleConfig.tag || 'p');
+                    Object.assign(newBlock.style, styleConfig.style || {});
+                    if (styleConfig.className) newBlock.className = styleConfig.className;
+                    newBlock.innerHTML = '<br>';
+                    if (range.startContainer === documentEl) {
+                        documentEl.appendChild(newBlock);
+                    } else {
+                        range.startContainer.parentNode.insertBefore(newBlock, range.startContainer.nextSibling);
+                    }
+                    range.setStart(newBlock, 0);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } else {
+                    // Pas bestaand blok aan
+                    const tag = styleConfig.tag || 'p';
+                    const currentTag = block.nodeName.toLowerCase();
+                    // Als de tag anders is, vervang het element
+                    if (tag !== currentTag && !['div', 'li', 'blockquote'].includes(currentTag)) {
+                        const newBlock = document.createElement(tag);
+                        Object.assign(newBlock.style, styleConfig.style || {});
+                        if (styleConfig.className) newBlock.className = styleConfig.className;
+                        while (block.firstChild) {
+                            newBlock.appendChild(block.firstChild);
+                        }
+                        if (newBlock.innerHTML.trim() === '') {
+                            newBlock.innerHTML = '<br>';
+                        }
+                        block.parentNode.replaceChild(newBlock, block);
+                        block = newBlock;
+                    } else {
+                        // Pas alleen stijl aan
+                        Object.assign(block.style, styleConfig.style || {});
+                        if (styleConfig.className) block.className = styleConfig.className;
+                        // Verwijder andere stijl-gerelateerde classes
+                        const allClasses = ['doc-title', 'doc-subtitle', 'doc-heading1', 'doc-heading2', 'doc-normal'];
+                        allClasses.forEach(c => {
+                            if (c !== styleConfig.className) block.classList.remove(c);
+                        });
+                    }
+                    // Herpositioneer cursor
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(block);
+                    newRange.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                }
+            }
+            updateToolbarState();
+            documentEl.focus();
+        }
+
+        /** Past font-size toe via inline span */
+        function applyFontSize(pxValue) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+
+            if (!range.collapsed && range.toString().trim().length > 0) {
+                // Verwijder eerst bestaande font-size spans binnen de selectie
+                const extracted = range.extractContents();
+                const tempDiv = document.createElement('div');
+                tempDiv.appendChild(extracted);
+
+                // Verwijder oude font-size spans
+                const oldSpans = tempDiv.querySelectorAll('span[data-font-size]');
+                oldSpans.forEach(span => {
+                    const parent = span.parentNode;
+                    while (span.firstChild) {
+                        parent.insertBefore(span.firstChild, span);
+                    }
+                    parent.removeChild(span);
+                });
+
+                // Wrap in nieuwe span
+                const span = document.createElement('span');
+                span.setAttribute('data-font-size', pxValue);
+                span.style.fontSize = pxValue + 'px';
+                while (tempDiv.firstChild) {
+                    span.appendChild(tempDiv.firstChild);
+                }
+                range.insertNode(span);
+
+                // Selecteer de inhoud
+                selection.removeAllRanges();
+                const newRange = document.createRange();
+                newRange.selectNodeContents(span);
+                selection.addRange(newRange);
+            } else {
+                // Geen selectie: zet font-size op cursorpositie
+                const node = range.startContainer;
+                if (node.nodeType === Node.TEXT_NODE && node.parentNode !== documentEl) {
+                    const parent = node.parentNode;
+                    if (parent.tagName === 'SPAN' && parent.hasAttribute('data-font-size')) {
+                        parent.style.fontSize = pxValue + 'px';
+                        parent.setAttribute('data-font-size', pxValue);
+                    } else if (parent.closest && parent.closest('span[data-font-size]')) {
+                        const span = parent.closest('span[data-font-size]');
+                        span.style.fontSize = pxValue + 'px';
+                        span.setAttribute('data-font-size', pxValue);
+                    }
+                }
+                // Update fontSizeInput om de huidige waarde te tonen
+                updateFontSizeInput();
+            }
+            documentEl.focus();
+        }
+
+        /** Update de font-size input op basis van cursorpositie */
+        function updateFontSizeInput() {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            let node = range.startContainer;
+
+            // Zoek naar een data-font-size span
+            while (node && node !== documentEl) {
+                if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute && node.hasAttribute('data-font-size')) {
+                    const val = parseInt(node.getAttribute('data-font-size'));
+                    if (!isNaN(val)) {
+                        fontSizeInput.value = val;
+                        return;
+                    }
+                }
+                node = node.parentNode;
+            }
+            // Fallback: probeer computed style
+            if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+                const computed = window.getComputedStyle(range.startContainer);
+                const fs = parseInt(computed.fontSize);
+                if (!isNaN(fs)) {
+                    fontSizeInput.value = fs;
+                    return;
+                }
+            } else if (range.startContainer.parentNode) {
+                const computed = window.getComputedStyle(range.startContainer.parentNode);
+                const fs = parseInt(computed.fontSize);
+                if (!isNaN(fs)) {
+                    fontSizeInput.value = fs;
+                    return;
+                }
+            }
+        }
+
+        /** Update de toolbar knoppen (actieve states) */
+        function updateToolbarState() {
+            try {
+                // Bold
+                if (document.queryCommandState('bold')) {
+                    btnBold.classList.add('active');
+                } else {
+                    btnBold.classList.remove('active');
+                }
+                // Italic
+                if (document.queryCommandState('italic')) {
+                    btnItalic.classList.add('active');
+                } else {
+                    btnItalic.classList.remove('active');
+                }
+                // Underline
+                if (document.queryCommandState('underline')) {
+                    btnUnderline.classList.add('active');
+                } else {
+                    btnUnderline.classList.remove('active');
+                }
+                // Font family
+                const fontName = document.queryCommandValue('fontName');
+                if (fontName && fontFamilySelect.querySelector(`option[value="${fontName.replace(/"/g, '')}"]`)) {
+                    fontFamilySelect.value = fontName.replace(/"/g, '');
+                }
+                // Font size input
+                updateFontSizeInput();
+                // Kleur
+                const foreColor = document.queryCommandValue('foreColor');
+                if (foreColor && /^#[0-9a-fA-F]{6}$/.test(foreColor)) {
+                    textColorPicker.value = foreColor;
+                }
+                // Stijl dropdown proberen te bepalen
+                updateStyleSelect();
+            } catch (e) {
+                // queryCommandState kan fouten geven in sommige contexten
+            }
+        }
+
+        /** Update de stijl dropdown op basis van het huidige blok */
+        function updateStyleSelect() {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            let block = getBlockElement(range.startContainer);
+            if (!block || block === documentEl) {
+                styleSelect.value = 'normal';
+                return;
+            }
+            const tag = block.nodeName.toLowerCase();
+            const cls = block.className || '';
+
+            if (tag === 'h1' || cls.includes('doc-title')) {
+                styleSelect.value = 'title';
+            } else if (tag === 'h2' || cls.includes('doc-subtitle')) {
+                styleSelect.value = 'subtitle';
+            } else if (tag === 'h3' || cls.includes('doc-heading1')) {
+                styleSelect.value = 'heading1';
+            } else if (tag === 'h4' || cls.includes('doc-heading2')) {
+                styleSelect.value = 'heading2';
+            } else {
+                styleSelect.value = 'normal';
+            }
+        }
+
+        // ========== EVENT LISTENERS ==========
+
+        // --- Lettertype ---
+        fontFamilySelect.addEventListener('change', function() {
+            documentEl.focus();
+            const font = this.value;
+            document.execCommand('fontName', false, font);
+            updateToolbarState();
+        });
+
+        // --- Lettergrootte (via input) ---
+        fontSizeInput.addEventListener('change', function() {
+            documentEl.focus();
+            let val = parseInt(this.value);
+            if (isNaN(val) || val < 1) val = 16;
+            if (val > 200) val = 200;
+            this.value = val;
+            applyFontSize(val);
+            updateToolbarState();
+        });
+        fontSizeInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+                this.focus();
+                this.dispatchEvent(new Event('change'));
+            }
+        });
+
+        // --- Vet ---
+        btnBold.addEventListener('click', function() {
+            documentEl.focus();
+            document.execCommand('bold', false, null);
+            updateToolbarState();
+        });
+
+        // --- Schuin ---
+        btnItalic.addEventListener('click', function() {
+            documentEl.focus();
+            document.execCommand('italic', false, null);
+            updateToolbarState();
+        });
+
+        // --- Onderstreept ---
+        btnUnderline.addEventListener('click', function() {
+            documentEl.focus();
+            document.execCommand('underline', false, null);
+            updateToolbarState();
+        });
+
+        // --- Tekstkleur ---
+        textColorPicker.addEventListener('input', function() {
+            documentEl.focus();
+            document.execCommand('foreColor', false, this.value);
+        });
+        textColorPicker.addEventListener('change', function() {
+            documentEl.focus();
+            document.execCommand('foreColor', false, this.value);
+            updateToolbarState();
+        });
+
+        // --- Stijl dropdown ---
+        styleSelect.addEventListener('change', function() {
+            documentEl.focus();
+            const style = this.value;
+            const styleMap = {
+                'title': { tag: 'h1', className: 'doc-title', style: { fontSize: '28px',
+                        fontWeight: '700', marginBottom: '8px', lineHeight: '1.3', color: '#111827' } },
+                'subtitle': { tag: 'h2', className: 'doc-subtitle', style: { fontSize: '20px',
+                        fontWeight: '400', marginBottom: '16px', lineHeight: '1.5', color: '#5f6b7a' } },
+                'heading1': { tag: 'h3', className: 'doc-heading1', style: { fontSize: '24px',
+                        fontWeight: '700', marginTop: '20px', marginBottom: '8px', lineHeight: '1.4',
+                    color: '#111827' } },
+                'heading2': { tag: 'h4', className: 'doc-heading2', style: { fontSize: '20px',
+                        fontWeight: '700', marginTop: '16px', marginBottom: '6px', lineHeight: '1.4',
+                    color: '#1f2937' } },
+                'normal': { tag: 'p', className: 'doc-normal', style: { fontSize: '16px', fontWeight: '400',
+                        marginBottom: '8px', lineHeight: '1.7', color: '#1a1a2e' } }
+            };
+            const config = styleMap[style];
+            if (config) {
+                applyBlockStyle(config);
+            }
+            updateToolbarState();
+        });
+
+        // --- Download PDF ---
+        btnDownloadPdf.addEventListener('click', function() {
+            // Bewaar de huidige selectie
+            const selection = window.getSelection();
+            const hadRange = selection.rangeCount > 0;
+            let savedRange = null;
+            if (hadRange) {
+                savedRange = selection.getRangeAt(0).cloneRange();
+            }
+
+            // Trigger print (gebruiker kan "Opslaan als PDF" kiezen in de printdialoog)
+            window.print();
+
+            // Herstel selectie na printdialoog
+            if (hadRange && savedRange) {
+                setTimeout(() => {
+                    try {
+                        selection.removeAllRanges();
+                        selection.addRange(savedRange);
+                        documentEl.focus();
+                    } catch (e) {
+                        // Negeer herstelfouten
+                    }
+                }, 300);
+            }
+        });
+
+        // --- Selectie verandering bijhouden voor toolbar state ---
+        document.addEventListener('selectionchange', function() {
+            // Check of de selectie binnen ons document valt
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            if (documentEl.contains(range.commonAncestorContainer)) {
+                updateToolbarState();
+            }
+        });
+
+        // --- Klik in document: update toolbar ---
+        documentEl.addEventListener('click', function() {
+            setTimeout(updateToolbarState, 50);
+        });
+        documentEl.addEventListener('keyup', function() {
+            setTimeout(updateToolbarState, 50);
+        });
+        documentEl.addEventListener('keydown', function(e) {
+            // Sneltoetsen voor vet, schuin, onderstreept
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'b' || e.key === 'B') {
+                    // Wordt al door browser afgehandeld via execCommand
+                    setTimeout(updateToolbarState, 50);
+                }
+                if (e.key === 'i' || e.key === 'I') {
+                    setTimeout(updateToolbarState, 50);
+                }
+                if (e.key === 'u' || e.key === 'U') {
+                    e.preventDefault(); // Voorkom dat browser underline via execCommand overschrijft
+                    document.execCommand('underline', false, null);
+                    setTimeout(updateToolbarState, 50);
+                }
+            }
+        });
+
+        // --- Initialiseer toolbar state ---
+        function initToolbar() {
+            // Zet initiële font-size input op basis van standaard document stijl
+            fontSizeInput.value = 16;
+            updateToolbarState();
+        }
+
+        // Stel focus in op het document bij laden (zodat de placeholder zichtbaar is)
+        setTimeout(() => {
+            initToolbar();
+            // Plaats cursor aan het einde van het document
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(documentEl);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            documentEl.focus();
+            updateToolbarState();
+        }, 100);
+
+        // ========== SLEEP & DROP BESTANDEN ONDERSTEUNEN (optioneel: plakken van tekst) ==========
+        documentEl.addEventListener('paste', function(e) {
+            // Sta plakken van platte tekst toe zonder rijke opmaak van externe bronnen
+            // (behoudt wel onze eigen opmaak)
+            setTimeout(updateToolbarState, 100);
+        });
+
+        console.log('📝 Document Editor is klaar voor gebruik!');
+        console.log('   - Bewerk het document hierboven');
+        console.log('   - Gebruik de toolbar om tekst op te maken');
+        console.log('   - Klik op "Download PDF" om het document als PDF op te slaan');
+        console.log('   - Sneltoetsen: Ctrl+B (vet), Ctrl+I (schuin), Ctrl+U (onderstreept)');
+    })();
+</script>
+</body>
+</html>
